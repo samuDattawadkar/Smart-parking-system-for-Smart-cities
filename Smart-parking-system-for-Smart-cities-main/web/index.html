@@ -1,0 +1,292 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Parking System</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f5f7fb; color: #1f2937; }
+    .container { max-width: 1120px; margin: 0 auto; padding: 24px; }
+    .hero { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 14px; margin-bottom: 18px; }
+    .hero h1 { margin: 0; font-size: 32px; }
+    .hero p { margin: 6px 0 0; color: #4b5563; max-width: 720px; }
+    .panel { background: white; border: 1px solid #d1d5db; border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .metric { padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; }
+    .metric strong { display: block; font-size: 2rem; margin-top: 8px; }
+    .slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .slot { border-radius: 14px; padding: 16px; background: white; border: 1px solid #e5e7eb; }
+    .slot.occupied { border-color: #dc2626; }
+    .slot.booked { border-color: #ea580c; }
+    .slot.available { border-color: #15803d; }
+    .slot h3 { margin: 0 0 8px; font-size: 1.15rem; }
+    .badge { display: inline-flex; padding: 6px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge.occupied { background: #fee2e2; color: #991b1b; }
+    .badge.booked { background: #ffedd5; color: #c2410c; }
+    .badge.available { background: #dcfce7; color: #166534; }
+    .form-row { display: grid; gap: 12px; margin-top: 14px; }
+    label { display: block; font-size: 0.9rem; margin-bottom: 4px; color: #374151; }
+    input, select, button { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 1rem; }
+    button { cursor: pointer; background: #0f766e; color: white; border: 0; font-weight: 700; }
+    button.secondary { background: #475569; }
+    button.danger { background: #b91c1c; }
+    .log { background: #111827; color: #e5e7eb; min-height: 130px; border-radius: 12px; padding: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; white-space: pre-wrap; overflow-y: auto; }
+    @media (max-width: 720px) { .hero { flex-direction: column; align-items: flex-start; } }
+  </style>
+</head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Dashboard | Smart City Solutions</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-square-parking"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Smart Parking</h1>
+                    <p>SMART CITY IOT PLATFORM</p>
+                </div>
+            </div>
+            <div class="system-status-bar">
+                <div class="status-indicator online">
+                    <span class="pulse-dot"></span>
+                    <span class="status-label">IoT Broker: Connected</span>
+                </div>
+                <div class="status-indicator">
+                    <i class="fa-solid fa-database"></i>
+                    <span class="status-label">Cloudant DB: Syncing</span>
+                </div>
+                <div class="system-time" id="system-time">12:00:00 PM</div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="dashboard-grid">
+            <!-- Left Panel: Simulator Controller -->
+            <section class="dashboard-card simulator-controls">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-sliders"></i> Hardware Simulator</h2>
+                    <p>Simulate local sensor and gate operations</p>
+                </div>
+                <div class="card-content">
+                    <div class="control-section">
+                        <h3>Entry Gate Sensor</h3>
+                        <p class="control-desc">Triggers when a vehicle arrives at the entrance barrier.</p>
+                        <button id="btn-trigger-entry" class="btn btn-primary btn-glow">
+                            <i class="fa-solid fa-car-tunnel"></i> Vehicle Arriving
+                        </button>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Exit Gate Sensor</h3>
+                        <p class="control-desc">Triggers when a vehicle leaves the parking area.</p>
+                        <button id="btn-trigger-exit" class="btn btn-secondary">
+                            <i class="fa-solid fa-right-from-bracket"></i> Vehicle Leaving
+                        </button>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Manual Overrides</h3>
+                        <div class="toggle-group">
+                            <div class="toggle-item">
+                                <span>Entry Barrier</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="chk-entry-gate">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-item">
+                                <span>Exit Barrier</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="chk-exit-gate">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-section demo-mode">
+                        <h3>Demo Controls</h3>
+                        <button id="btn-random-occupancy" class="btn btn-outline">
+                            <i class="fa-solid fa-shuffle"></i> Randomize Slot Occupancy
+                        </button>
+                        <button id="btn-clear-all" class="btn btn-danger-outline">
+                            <i class="fa-solid fa-trash-can"></i> Clear All Slots
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Middle Panel: Live Parking Visualizer -->
+            <section class="dashboard-card parking-visualizer">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-display"></i> Real-time Lot Layout</h2>
+                    <p>Live visualization of active parking slots A1 - A6</p>
+                </div>
+                <div class="card-content visualizer-content">
+                    <!-- Entrance barrier animation -->
+                    <div class="gate-status-lane entry-lane">
+                        <span class="lane-label">ENTRY LANE</span>
+                        <div class="barrier-container">
+                            <span class="barrier-label">Barrier Gate</span>
+                            <div class="barrier-arm closed" id="entry-gate-arm"></div>
+                        </div>
+                    </div>
+
+                    <!-- Slots Grid -->
+                    <div class="slots-grid">
+                        <div class="slot-item empty" id="slot-A1" data-slot="A1">
+                            <span class="slot-id">A1</span>
+                            <div class="car-avatar">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <span class="slot-indicator">FREE</span>
+                        </div>
+                        <div class="slot-item empty" id="slot-A2" data-slot="A2">
+                            <span class="slot-id">A2</span>
+                            <div class="car-avatar">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <span class="slot-indicator">FREE</span>
+                        </div>
+                        <div class="slot-item empty" id="slot-A3" data-slot="A3">
+                            <span class="slot-id">A3</span>
+                            <div class="car-avatar">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <span class="slot-indicator">FREE</span>
+                        </div>
+                        <div class="slot-item empty" id="slot-A4" data-slot="A4">
+                            <span class="slot-id">A4</span>
+                            <div class="car-avatar">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <span class="slot-indicator">FREE</span>
+                        </div>
+                        <div class="slot-item empty" id="slot-A5" data-slot="A5">
+                            <span class="slot-id">A5</span>
+                            <div class="car-avatar">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <span class="slot-indicator">FREE</span>
+                        </div>
+                        <div class="slot-item empty" id="slot-A6" data-slot="A6">
+                            <span class="slot-id">A6</span>
+                            <div class="car-avatar">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <span class="slot-indicator">FREE</span>
+                        </div>
+                    </div>
+
+                    <!-- Exit barrier animation -->
+                    <div class="gate-status-lane exit-lane">
+                        <span class="lane-label">EXIT LANE</span>
+                        <div class="barrier-container">
+                            <span class="barrier-label">Barrier Gate</span>
+                            <div class="barrier-arm closed" id="exit-gate-arm"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Analytics & Reservations -->
+            <div class="analytics-right-grid">
+                <!-- Analytics Card -->
+                <section class="dashboard-card analytics-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-chart-pie"></i> Lot Analytics</h2>
+                        <p>Real-time occupancy levels</p>
+                    </div>
+                    <div class="card-content">
+                        <div class="metrics-grid">
+                            <div class="metric-box">
+                                <span class="metric-title">Available Slots</span>
+                                <span class="metric-value text-green" id="val-available-slots">6</span>
+                                <span class="metric-sub">Out of 6 slots</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-title">Occupied Slots</span>
+                                <span class="metric-value text-red" id="val-occupied-slots">0</span>
+                                <span class="metric-sub">Active parking</span>
+                            </div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-label">
+                                <span>Occupancy Rate</span>
+                                <span id="val-occupancy-rate">0%</span>
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill" id="occupancy-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-count-box">
+                            <div class="count-item">
+                                <span class="count-label">Total Vehicles Logged:</span>
+                                <strong id="val-total-vehicles">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Remote Booking & Controls Card -->
+                <section class="dashboard-card booking-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-envelope-open-text"></i> Remote Reservations</h2>
+                        <p>Simulate booking or cancelling from Web UI</p>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label for="booking-slot-select">Select Target Parking Slot:</label>
+                            <select id="booking-slot-select" class="form-control">
+                                <option value="A1">Slot A1</option>
+                                <option value="A2">Slot A2</option>
+                                <option value="A3">Slot A3</option>
+                                <option value="A4">Slot A4</option>
+                                <option value="A5">Slot A5</option>
+                                <option value="A6">Slot A6</option>
+                            </select>
+                        </div>
+                        <div class="booking-btn-group">
+                            <button id="btn-book-slot" class="btn btn-green">
+                                <i class="fa-solid fa-calendar-check"></i> Book Selected Slot
+                            </button>
+                            <button id="btn-cancel-slot" class="btn btn-danger">
+                                <i class="fa-solid fa-calendar-xmark"></i> Cancel Booking
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Live Telemetry Stream -->
+        <footer class="telemetry-log">
+            <div class="log-header">
+                <h3><i class="fa-solid fa-terminal"></i> Live Cloud IoT Activity Log</h3>
+                <span class="log-actions" id="btn-clear-logs"><i class="fa-solid fa-eraser"></i> Clear Logs</span>
+            </div>
+            <div class="log-body" id="log-stream">
+                <div class="log-line system">[SYSTEM] Dashboard initialized. Awaiting IoT Telemetry...</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Script Resource -->
+    <script src="app.js"></script>
+</body>
+</html>
